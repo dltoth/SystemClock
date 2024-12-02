@@ -185,7 +185,7 @@ an unsigned 32 bit fraction. Call these timestamps t2 and t3 respectively where:
 ```
 
 Note that the timestamps t2 and t3 are defined in terms of <b><i>era offset only</b></i> because the actual era is not transmitted 
-from the NTP server. In order to express t3 and t3 in full system time, NTP server era must be determined. To this end, era offsets 
+from the NTP server. In order to express t2 and t3 in full system time, NTP server era must be determined. To this end, era offsets 
 between client and server are examined to determine if client and server reside in the same or different eras.
 
 While it is possible for two points on the NTP scale to be more than 68 years apart and reside in the same era, if we assume that 
