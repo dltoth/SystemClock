@@ -12,18 +12,16 @@ on board millisecond timer to produce an NTP synchronized time.
 
 ## Basic Usage ##
 
-The three main classes that make up this library can be used to develop an NTP synchronized system clock.
+The three main classes that make up this library are used to develop an NTP synchronized [SystemClock](https://github.com/dltoth/SystemClock/blob/main/src/SystemClock.h).
 
-The <b><i>Instant</i></b> class represents a point on the NTP timescale described above as seconds since Jan 1, 1900 00:00:00 (See [NTP Background](#ntp-background)
+The [Instant](https://github.com/dltoth/SystemClock/blob/main/src/Instant.h)</i></b> class represents a point on the NTP timescale described above as seconds since Jan 1, 1900 00:00:00 (See [NTP Background](#ntp-background)
 for a detailed discussion on the NTP timescale). <i>Instant</i> has a complete set of operators for addition, subtraction, comparison, and division by integer, all
 used in computing the NTP clock offset. <i>Instant</i> also has useful conversions between the NTP timescale and date/time, as well as formatted printing to 
 a char buffer.
 
-The <b><i>Timestamp</i></b> class is a combination of <i>Instant</i> with a millisecond timestamp. Together these two classes can be used to keep track of elapsed
-time on a host system. 
+The [Timestamp](https://github.com/dltoth/SystemClock/blob/main/src/Timestamp.h)</i></b> class is a combination of <i>Instant</i> with a millisecond timestamp. Together these two classes can be used to keep track of elapsed time on a host system. 
 
-The <b><i>NTPTime</i></b> class provides the interface to an NTP time service for synchronization. The following lines of code will create a timestamp,
-synchronize it with NTP, and keep it updated: 
+The [NTPTime](https://github.com/dltoth/SystemClock/blob/main/src/NTPTime.h)</i></b> class provides the interface to an NTP time service for synchronization. The following lines of code will create a timestamp, synchronize it with NTP, and keep it updated: 
 
 ```
    #include <SystemClock.h>
@@ -66,7 +64,7 @@ In order to determine how far the on board millisecond timer has drifted from NT
 
 Note that once <i>current</i> has been aligned to NTP, the offset can be computed without calling <i>current.update()</i> first.
 
-Complete system clock functionality is provided by the <i><b>SystemClock</b></i> class:
+Complete system clock functionality is provided by the [SystemClock](https://github.com/dltoth/SystemClock/blob/main/src/SystemClock.h) class:
 
 ```
    #include <SystemClock.h>
@@ -78,7 +76,7 @@ Complete system clock functionality is provided by the <i><b>SystemClock</b></i>
    Instant current = c.now()    // Get current EST time, updated from NTP as necessary
 ```
 
-The <b>SystemClock</b> library will provide date and time in local time zone, periodically synchronizing the internal millisecond 
+The <b>SystemClock</b> library provides date and time in local time zone, periodically synchronizing the internal millisecond 
 timer with an NTP server. 
 
 The full set of classes in the SystemClock library include:
@@ -129,46 +127,47 @@ Here are a few examples:
    -2     0               -8589934592          Oct 18, 1627  11:03:28 
 ```
  
-Notes:
+In what follows, define the constant **POW2_32** as POW2_32 = 2<sup>32</sup>
+
+**Notes:**
 * The NTP Timestamp will roll over on Feb 7, 2036 at 06:28:15.
 * The relationship between era, offset, and system time is as follows:
 
 ```
-    system time  = era*(2^32) + era offset
-    era          = (system time - offset)/(2^32)
-    era offset   = system time - era*(2^32)
+    system time  = era*POW2_32  + era offset
+    era          = (system time - offset)/POW2_32
+    era offset   = system time - era*POW2_32
 ```
 
 * Era and era offset can be computed directly from the system time as:
 
 ```
-    remainder    = system time % 2^32
-    era offset   = ((remainder<0)?(remainder+2^32):(remainder))
-    era          = ((remainder<0)?((system time/2^32)-1):(system time/2^32))
+    remainder    = system time % POW2_32
+    era offset   = ((remainder<0)?(remainder+POW2_32):(remainder))
+    era          = ((remainder<0)?((system time/POW2_32)-1):(system time/POW2_32))
 ```
 
-The relationship between system time, era, era offset, and remainder is shown in the figure below.
+The relationship between system time, era, era offset, and remainder is shown in the figure below. 
 
 ````  
                                                                           |----offset--->|
             |---offset--->|<-remainder--|                |                |--remainder-->|
             |------------><------(system time < 0)-------|------(system time > 0)------->|
    _________+___________________________+_________________________________+_____________________+____________...
-     (era-1)*2^32                    era*2^32      ...   0   ...       era*2^32          (era+1)*2^32
+         era*POW2_32             (era+1)*POW2_32   ...   0   ...       era*POW2_32       (era+1)*POW2_32
                       ...    era < 0                     |              era > 0    ...
 ````
 
 The fractional part of an NTP timestamp is always positive (non-negative) and represents an offset from the system time. So, system time as a floating point is
 
 ```
-    system time + fraction/2^32
+    system time + fraction/POW2_32
 ```
 
 The relationship between system time and fraction is shown in the figure below.
 
 ````  
-            |                           <--fraction-->|
-            |<--------- system time - 1 ------------->|<----- system time -----><--- fraction --->|
+            |<---- system time - 1 ----><--fraction-->|<----- system time -----><--- fraction --->|
             |<------------(system time < 0)-----------|<-------------(system time > 0)------------|
    _____________________________________________________________________________________________________
                                                   ... 0 ...
@@ -244,11 +243,10 @@ that synchronizes with NTP.
 
 ### Instant ###
 
-The <b><i>Instant</b></i> class represents a point on the NTP timeline, and has methods that provide era, era offset, date, and time. 
-Instant is given only as seconds (from Jan 1, 1900 UTC) and fraction; timezone must be managed separately. 
+The [Instant](https://github.com/dltoth/SystemClock/blob/main/src/Instant.h) class represents a point on the NTP timeline, and has methods that provide era, era offset, date, and time. Instant is given only as a signed 64-bit seconds (from Jan 1, 1900 UTC) and unsigned 32-bit fraction; timezone must be managed separately. 
 
-Conceptually, Instant can either be implemented with a signed 64-bit integer seconds and unsigned 32-bit fraction offset, or more simply, a 
-double precision seconds from Jan 1, 1900. In this library, Instant is implemented with signed 64-bit seconds and unsigned 32 bit 
+Conceptually, *Instant* can either be implemented with a signed 64-bit integer seconds and unsigned 32-bit fraction offset, or more simply a 
+double precision seconds from Jan 1, 1900. In this library, *Instant* is implemented with signed 64-bit seconds and unsigned 32 bit 
 offset fraction. The choice to use a combination of 64 and 32 bit integers rather than double precision is two-fold: First, to maintain 
 the same precision as NTP, and second to take advantage of the speed of integer computation over double precision. The 64-bit seconds field 
 is a combination of 32-bit signed era and 32-bit unsigned era offset pre-computed to the sysTime as:
@@ -259,7 +257,7 @@ is a combination of 32-bit signed era and 32-bit unsigned era offset pre-compute
  
 The unsigned offset fraction makes arithmetic a little more tricky when sysTime is negative, but still only requires 32-bit addition and subtraction. 
 
-Instant has a full compliment of operators to make the clock offset calculation simpler. For example, if making an NTP request and:
+*Instant* has a full compliment of operators to make the clock offset calculation simpler. For example, if making an NTP request and:
 
 ```
       T1 := Instant the request was sent on the client
@@ -280,8 +278,7 @@ and the system time can be updated as:
       Instant sysTime = T4 + clockOffset;
 ```
 
-Instant can be converted between NTP system time and date/time or visa versa. For example, the first second of era -1 occurs 
-on Dec 31, 1899 at 23:59:59, and thus era offset is 4294967295, so:
+Instant can be converted between NTP system time and date/time or visa versa. For example, the first second of era -1 (when system time is -1) occurs on Dec 31, 1899 at 23:59:59, and thus era offset is 4294967295, so:
 
 ```
       Date d = {12,31,1899};
@@ -298,22 +295,21 @@ on Dec 31, 1899 at 23:59:59, and thus era offset is 4294967295, so:
  ```
 
 The comlete set of methods for Instant are are as follows:
-<b>
 
 ```
-    void           setSysTime(int64_t secs)                       // Set system time to a signed 64-bit integer
-    void           setFraction(uint32_t fraction)                 // Set the fractional part to an unsigned 32-bit integer
-    void           initialize(int32_t e,uint32_t o,uint32_t f=0)  // Initialize Instant with signed era, unsigned era offset, and unsigned fraction
-    void           initialize(double sysd)                        // Initialize Instant with signed double precision system time
-    void           initialize(const Date& d, const Time& t)       // Initialize Instant with a Date and Time
-    int32_t        era()       const                              // Return the NTP era
-    uint32_t       eraOffset() const                              // Rethrn the NTP era offset
-    int64_t        secs()      const                              // Return system time as signed 64-bit seconds since Jan 1, 1900 00:00:00
-    int32_t        fraction()  const                              // Return the fractional part of seconds
-    double         sysTimed()  const                              // Return system time as signed double precision seconds since Jan 1, 1900 00:00:00, including fraction
+	void           setSysTime(int64_t secs)                       // Set system time to a signed 64-bit integer
+	void           setFraction(uint32_t fraction)                 // Set the fractional part to an unsigned 32-bit integer
+	void           initialize(int32_t e,uint32_t o,uint32_t f=0)  // Initialize Instant with signed era, unsigned era offset, and unsigned fraction
+	void           initialize(double sysd)                        // Initialize Instant with signed double precision system time
+	void           initialize(const Date& d, const Time& t)       // Initialize Instant with a Date and Time
+	int32_t        era()       const                              // Return the NTP era
+	uint32_t       eraOffset() const                              // Rethrn the NTP era offset
+	int64_t        secs()      const                              // Return system time as signed 64-bit seconds since Jan 1, 1900 00:00:00
+	uint32_t       fraction()  const                              // Return the fractional part of seconds
+	double         sysTimed()  const                              // Return system time as signed double precision seconds since Jan 1, 1900 00:00:00, including fraction
     void           addMillis(uint32_t millis)                     // Add milliseconds to Instant
-    Date           toDate()                                       // Return Date (month, day, and year) of this Instant
-    Time           toTime()                                       // Return time of day (hour:minute:second) of this Instant
+	Date           toDate()                                       // Return Date (month, day, and year) of this Instant
+	Time           toTime()                                       // Return time of day (hour:minute:second) of this Instant
     uint64_t       elapsedTime(const Instant& t)   const          // Elapsed time in seconds between this Instant and the input Instant t                             
     Instant        toTimezone(double hours)                       // Return an Instant whose seconds have been shifted by the input hours   
     static Instant toInstant(const Date& d, const Time& t)        // Convert Date and Time to Instant
@@ -325,13 +321,12 @@ The comlete set of methods for Instant are are as follows:
 
 ```
 
-</b>
 
-Note that <b><i>Date</b></i> and <b><i>Time</b></i> are C-style structures defined in <i>Instant.h</i>
+Note that <b><i>Date</b></i> and <b><i>Time</b></i> are C-style structures defined in [Instant.h](https://github.com/dltoth/SystemClock/blob/main/src/Instant.h)
 
 ### Timestamp ###
 
-The <b><i>Timestamp</b></i> class aligns an NTP Instant with the on board millisecond timer. It consists of an <i>Instant</i> and two millisecond timestamps, one for timekeeping and the other as a record of when the Timestamp was minted. <i>Updating</i> the Timestamp folds elapsed milliseconds into the Instant. So, for example:
+The [Timestamp](https://github.com/dltoth/SystemClock/blob/main/src/Timestamp.h) class aligns an NTP Instant with the on board millisecond timer. It consists of an <i>Instant</i> and two millisecond timestamps, one for timekeeping and the other as a record of when the Timestamp was minted. <i>Updating</i> the Timestamp folds elapsed milliseconds into the Instant. So, for example:
 
 ```
   Date d(1,1,2024);                                                   // Date Jan 1, 2024
@@ -354,7 +349,6 @@ The <b><i>Timestamp</b></i> class aligns an NTP Instant with the on board millis
 ```
 
 So <i>Timestamp::getMillis()</i> will change with each call to <i>Timestamp::update()</i>, however <i>Timestamp::getStamp()</i> will always remain the same. Timestamp methods are as follows:
-<b>
 
 ```
   Instant           ntpTime()   const                                // Return the underlying Instant for this Timestamp
@@ -368,28 +362,11 @@ So <i>Timestamp::getMillis()</i> will change with each call to <i>Timestamp::upd
 
 ```
 
-</b>
-
 Similar to <i>Instant</i>, <i>Timestamp</i> has a full complement of operators for addition, subtraction, and division by integer that operate on the underlying <i>Instant</i>.
 
 ### NTPTime ###
 
-The <b><i>NTPTime</b></i> class is a utility class that queries NTP providing timestamps, clock offset, and system time synchronization.
-
-NTPTime methods include are as follows:
-
-To resolve the IPAddress of one of the standard NTP Time Servers depending on success of host address resolution:
-
-<b>
-	
-```
-    static IPAddress   getTimeServerAddress();
-
-```
-
-</b>
-
-NTP Servers are resolved in the following order:
+The [NTPTime](https://github.com/dltoth/SystemClock/blob/main/src/NTPTime.h) class is a utility class that queries NTP providing timestamps, clock offset, and system time synchronization. The following time servers are queried in this order, depending on success of host address resolution:
 
 ```
       time.google.com
@@ -397,61 +374,32 @@ NTP Servers are resolved in the following order:
       time-a.nist.gov
 ```
 
-System time is computed on the NTP timescale as seconds since 0h Jan 1, 1900. In computing NTP timestamps it is assumed that the clock runs 
+System time is computed on the NTP timescale as seconds since 00:00:00 Jan 1, 1900. In computing NTP timestamps it is assumed that the clock runs 
 forward from this date/time, hence when era rolls over it will go from n to n+1, and the era offset will go to 0. 
 
-To query an NTP server for unsigned 32-bit timestamps (seconds and fraction) for request receive and response transmit:
-
-<b>
+NTPTime methods include:
 
 ```
-    static int        getNTPTimestamp(unsigned long& rcvSecs, unsigned long& rcvFraction, unsigned long& tsmSecs, unsigned long& tsmFraction,
-                                      unsigned long timeout = NTP_TIMEOUT, IPAddress timeServer = NTP_SERVER, int port = NTP_PORT);
+    static void        getNTPTimestamp(unsigned long& rcvSecs, unsigned long& rcvFraction, unsigned long& tsmSecs, unsigned long& tsmFraction);
 ```
 
-</b>
 
-where 
+to query an NTP server for unsigned 32-bit timestamps (seconds and fraction) for request receive and response transmit, where 
 
 ```
     rcvSecs     - The seconds timestamp on the NTP server that the request was received
     rcvFraction - The fraction (of a second) timestamp on the NTP server that the request was received
     tsmSecs     - The seconds timestamp on the NTP server that the response was transmitted
     tsmFraction - The fraction (of a second) timestamp on the NTP server that the response was transmitted
-    timeout     - Timeout in milliseconds to wait for response; defaults to 2000 (2 secs)
-    timeServer  - NTP Server to use; defaults to NTPTime::getTimeServerAddress()
-    port        - NTP Server port; defaults to 123
-```
-and returns 1 on success and:
-
-```
-   -1: Error initializing udp channel on begin()
-   -2: Error writing udp packet to the channel
-   -3: Timeout exceeded waiting on response from NTP server
 ```
 
-To compute the NTP clock offset (<i>osft</i>) and return updated system time from an input reference time:
- 
-<b>
+and 
 
 ```
-    static Timestamp   updateSysTime(const Timestamp& ref, Instant& osft, unsigned long timeout = NTP_TIMEOUT, 
-                                     IPAddress timeServer = NTP_SERVER, int port = NTP_PORT );
+    static Timestamp   updateSysTime(const Timestamp& ref, Instant& osft);
 ```
 
-</b>
-
-where
-
-```
-    ref         - Reference Timestamp initialized to within 68 years of the NTP Server
-    osft        - NTP clock offset returned as FYI
-    timeout     - Timeout in milliseconds to wait for response; defaults to 2000 (2 secs)
-    timeServer  - NTP Server to use; defaults to NTPTime::getTimeServerAddress()
-    port        - NTP Server port; defaults to 123
-```
-
-and returns current system time as Timestamp.
+to compute the NTP clock offset (<i>osft</i>) and return updated system time from the input current system time (<i>ref</i>)
 
 UpdateSysTime computes the following Instants:
 
@@ -487,69 +435,41 @@ At this point, each call to <i>ref.update()</i> will move the Instant <i>ref.ntp
 
 To query NTP and compute the clock offset from the input current system time (ref):
 
-<b>
-
 ```
-    static Instant     ntpClockOffset(const Timestamp& ref, unsigned long timeout = NTP_TIMEOUT, IPAddress timeServer = NTP_SERVER, int port = NTP_PORT);
+    static Instant     ntpClockOffset(const Timestamp& ref);
 ```
-
-</b>
-
-where
-
-```
-    ref         - Reference Timestamp initialized to within 68 years of the NTP Server
-    timeout     - Timeout in milliseconds to wait for response; defaults to 2000 (2 secs)
-    timeServer  - NTP Server to use; defaults to NTPTime::getTimeServerAddress()
-    port        - NTP Server port; defaults to 123
-```
-
-and returns the NTP clock offset as an Instant.
-
 
 ### SystemClock ###
 
-The <b><i>SystemClock</b></i> class provides an NTP synchronized system time in terms of Instant UTC. NTP synchronization happens with an on board Timer (<i>syncTimer</i>) 
-that updates every <i>ntpSync()</i> minutes. The syncTimer can be turned off with 
-<b>
+The [SystemClock](https://github.com/dltoth/SystemClock/blob/main/src/SystemClock.h) class provides an NTP synchronized system time in terms of Instant UTC. NTP synchronization happens with an on board Timer (<i>syncTimer</i>) that updates every <i>ntpSync()</i> minutes. The syncTimer can be turned off with 
 
 ```
     setSyncTimerOFF()
 
 ```
 
-</b>
-
 in which case, NTP synchronization happens on demand with <i>sysTime()</i> if the <i>ntpSync()</i> interval has passed. 
 
 SystemClock must be initialized to a time close to (within 68 years of) the actual time UTC. The default initialization time is Jan 1, 2024 00:00:00 UTC.
 
 System time is internally managed as UTC. For example, the following methods provide:
-<b>
 
 ```
-   Instant           sysTime()            - Current system time UTC, updating with NTP as necessary
-   Instant           updateSysTime()      - Force NTP update and return current system time UTC
-   const Timestamp&  startTime()          - The actual UTC start time of SystemClock
-   const Instant&    initializationDate() - Initialization date/time in UTC
+   sysTime()                       - Current system time UTC, updating with NTP as necessary
+   updateSysTime()                 - Force NTP update and return current system time UTC
+   startTime()                     - The actual UTC start time of SystemClock
+   initializationDate()            - Initialization date/time in UTC
 ```
-
-</b>
 
 Additionaly, for convenience SystemClock has a timezone offset so some methods provide system time as Instant in local time:
-<b>
 
 ```
-   Instant           now()                - System time in local time
-   Instant           lastSync()           - The last NTP synchronization in local time
-   Instant           nextSync()           - The next expected NTP synchronization in local time
+   now()                - System time in local time
+   lastSync()           - The last NTP synchronization in local time
+   nextSync()           - The next expected NTP synchronization in local time
 ```
-
-</b> 
 
 Other SystemClock methods include: 
-
-<b>
 
 ```
     Instant           utcToLocal(const Instant& utc) const       // Convert utc Instant to local time from timezone offset
@@ -562,13 +482,10 @@ Other SystemClock methods include:
     void              ntpSync(unsigned int min);                 // Set NTP sync interval in minutes        
     void              setTimerOFF()                              // Turn syncTimer OFF
     void              setTimerON()                               // Turn syncTimer ON
-    boolean           timerOFF()                     const       // True of syncTimer is OFF
-    boolean           timerON()                      const       // True if syncTImer is ON
+    boolean           timerOFF()       const                     // True of syncTimer is OFF
+    boolean           timerON()        const                     // True if syncTImer is ON
     void              doDevice()                                 // Do a unit of work updating syncTimer, should be called from loop() in Arduino sketch
 ```
-
-</b>
-
 
 <br><br>
 <a name="references"></a>
