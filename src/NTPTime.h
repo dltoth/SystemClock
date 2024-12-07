@@ -35,8 +35,6 @@
 #include <WiFiUdp.h>
 #include "Instant.h"
 #include "Timestamp.h"
-#include "DInstant.h"
-#include "DTimestamp.h"
 
 /** Leelanau Software Company namespace 
 *  
@@ -86,7 +84,7 @@ namespace lsc {
  *            |---offset--->|<-remainder--|                |                |--remainder-->|
  *            |------------><-------(sysTime < 0)----------|--------(sysTime>0)----------->|
  *   _________+___________________________+_________________________________+_____________________+____________...
- *       era*2**32                (era+1)*2**32      ...   0   ...      era*2**32          (era+1)*2**32
+ *        era*2**32               (era+1)*2**32      ...   0   ...      era*2**32          (era+1)*2**32
  *                      ...    era < 0                     |              era > 0    ...
  *
  *
